@@ -66,7 +66,8 @@ class pair(object):
         return self.word < other.word
 
     def __eq__(self, other):
-        return isinstance(other, pair) and self.word == other.word and self.flag == other.flag
+        return isinstance(other,
+                          pair) and self.word == other.word and self.flag == other.flag
 
     def __hash__(self):
         return hash(self.word)
@@ -106,7 +107,8 @@ class POSTokenizer(object):
                 self.word_tag_tab[word] = tag
             except Exception:
                 raise ValueError(
-                    'invalid POS dictionary entry in %s at Line %s: %s' % (f_name, lineno, line))
+                    'invalid POS dictionary entry in %s at Line %s: %s' % (
+                    f_name, lineno, line))
         f.close()
 
     def makesure_userdict_loaded(self):
@@ -251,6 +253,7 @@ class POSTokenizer(object):
 
     def lcut(self, *args, **kwargs):
         return list(self.cut(*args, **kwargs))
+
 
 # default Tokenizer instance
 

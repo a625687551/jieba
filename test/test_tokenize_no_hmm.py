@@ -1,20 +1,22 @@
-#encoding=utf-8
-from __future__ import print_function,unicode_literals
+# encoding=utf-8
+from __future__ import print_function, unicode_literals
 import sys
+
 sys.path.append("../")
 import jieba
 
-g_mode="default"
+g_mode = "default"
+
 
 def cuttest(test_sent):
     global g_mode
-    result = jieba.tokenize(test_sent,mode=g_mode,HMM=False)
+    result = jieba.tokenize(test_sent, mode=g_mode, HMM=False)
     for tk in result:
-        print("word %s\t\t start: %d \t\t end:%d" % (tk[0],tk[1],tk[2]))
+        print("word %s\t\t start: %d \t\t end:%d" % (tk[0], tk[1], tk[2]))
 
 
 if __name__ == "__main__":
-    for m in ("default","search"):
+    for m in ("default", "search"):
         g_mode = m
         cuttest("这是一个伸手不见五指的黑夜。我叫孙悟空，我爱北京，我爱Python和C++。")
         cuttest("我不喜欢日本和服。")
@@ -72,7 +74,8 @@ if __name__ == "__main__":
         cuttest("好人使用了它就可以解决一些问题")
         cuttest("是因为和国家")
         cuttest("老年搜索还支持")
-        cuttest("干脆就把那部蒙人的闲法给废了拉倒！RT @laoshipukong : 27日，全国人大常委会第三次审议侵权责任法草案，删除了有关医疗损害责任“举证倒置”的规定。在医患纠纷中本已处于弱势地位的消费者由此将陷入万劫不复的境地。 ")
+        cuttest(
+            "干脆就把那部蒙人的闲法给废了拉倒！RT @laoshipukong : 27日，全国人大常委会第三次审议侵权责任法草案，删除了有关医疗损害责任“举证倒置”的规定。在医患纠纷中本已处于弱势地位的消费者由此将陷入万劫不复的境地。 ")
         cuttest("大")
         cuttest("")
         cuttest("他说的确实在理")

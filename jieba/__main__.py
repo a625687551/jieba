@@ -4,7 +4,9 @@ import jieba
 from argparse import ArgumentParser
 from ._compat import *
 
-parser = ArgumentParser(usage="%s -m jieba [options] filename" % sys.executable, description="Jieba command line interface.", epilog="If no filename specified, use STDIN instead.")
+parser = ArgumentParser(usage="%s -m jieba [options] filename" % sys.executable,
+                        description="Jieba command line interface.",
+                        epilog="If no filename specified, use STDIN instead.")
 parser.add_argument("-d", "--delimiter", metavar="DELIM", default=' / ',
                     nargs='?', const=' ',
                     help="use DELIM instead of ' / ' for word delimiter; or a space if it is used without DELIM")
@@ -30,7 +32,10 @@ if args.quiet:
     jieba.setLogLevel(60)
 if args.pos:
     import jieba.posseg
+
     posdelim = args.pos
+
+
     def cutfunc(sentence, _, HMM=True):
         for w, f in jieba.posseg.cut(sentence, HMM):
             yield w + posdelim + f
