@@ -32,21 +32,24 @@ class UndirectWeightedGraph:
 
         # this line for build stable iteration
         sorted_keys = sorted(self.graph.keys())
-        for x in xrange(10):  # 10 iters
-            for n in sorted_keys:
+        for x in xrange(10):  # 10 iters 默认遍历10次
+            for n in sorted_keys:  # 遍历各个节点
                 s = 0
-                for e in self.graph[n]:
+                for e in self.graph[n]:  # 遍历各个节点的入度节点
+                    # 将如度节点的贡献后的权值相加
+                    # 贡献率 = 入度结点与结点n的共现次数 / 入度结点的所有出度的次数
                     s += e[2] / outSum[e[1]] * ws[e[1]]
+                # 更新节点n的权重
                 ws[n] = (1 - self.d) + self.d * s
 
         (min_rank, max_rank) = (sys.float_info[0], sys.float_info[3])
-
+        # 获取权重最大和最小值
         for w in itervalues(ws):
             if w < min_rank:
                 min_rank = w
             if w > max_rank:
                 max_rank = w
-
+        # 归一化
         for n, w in ws.items():
             # to unify the weights, don't *100.
             ws[n] = (w - min_rank / 10.0) / (max_rank - min_rank / 10.0)
@@ -98,7 +101,7 @@ class TextRank(KeywordExtractor):
         # 依次遍历共现词典的每个元素，将词i，词j作为一条边起始点和终止点，共现的次数作为边的权重
         for terms, w in cm.items():
             g.addEdge(terms[0], terms[1], w)
-        nodes_rank = g.rank() # 运行text-rank算法
+        nodes_rank = g.rank()  # 运行text-rank算法
         # 排序
         if withWeight:
             tags = sorted(nodes_rank.items(), key=itemgetter(1), reverse=True)
