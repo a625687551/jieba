@@ -73,22 +73,22 @@ def viterbi(obs, states, start_p, trans_p, emit_p):
     for y in states:  # 初始化状态概率
         V[0][y] = start_p[y] + emit_p[y].get(obs[0], MIN_FLOAT)
         path[y] = [y]  # 路径记录
-    for t in xrange(1, len(obs)):
+    for t in xrange(1, len(obs)):  # 时刻t = 1,...,len(obs) - 1
         V.append({})
         newpath = {}
-        for y in states:
+        for y in states:  # 当前时刻所处的各种可能的状态
             em_p = emit_p[y].get(obs[t], MIN_FLOAT)
             # t 时刻状态为y的最大概率(从t-1时刻中选择到达时刻t且状态为y的状态y0)
             (prob, state) = max(
                 [(V[t - 1][y0] + trans_p[y0].get(y, MIN_FLOAT) + em_p, y0) for
                  y0 in PrevStatus[y]])
             V[t][y] = prob
-            newpath[y] = path[state] + [y]  # 只保存概率最大的一种路径
+            newpath[y] = path[state] + [y]  # 上一刻最大状态+这一刻状态
         path = newpath
     # 求出最后一个字那种状态的对应概率最大，最后一个字只可能有两种情况：E(结尾)和S(独立词)
     (prob, state) = max((V[len(obs) - 1][y], y) for y in 'ES')
 
-    return (prob, path[state])
+    return (prob, path[state])  # 返回最大概率对数和最优路径
 
 
 # 利用viterbi算法得到句子分词的生成器
@@ -98,18 +98,19 @@ def __cut(sentence):
     prob, pos_list = viterbi(sentence, 'BMES', start_P, trans_P, emit_P)
     begin, nexti = 0, 0
     # print pos_list, sentence
+    # 基于隐藏状态进行分词
     for i, char in enumerate(sentence):
         pos = pos_list[i]
-        if pos == 'B':
+        if pos == 'B':  # 字所处的位置是开始位置
             begin = i
-        elif pos == 'E':
-            yield sentence[begin:i + 1]
+        elif pos == 'E':  # 字所处的位置是结束位置
+            yield sentence[begin:i + 1]  # 这个序列就是一个分词
             nexti = i + 1
-        elif pos == 'S':
+        elif pos == 'S':  # 单独成字
             yield char
             nexti = i + 1
     if nexti < len(sentence):
-        yield sentence[nexti:]
+        yield sentence[nexti:]  # 剩余的直接作为一个分词返回
 
 
 re_han = re.compile("([\u4E00-\u9FD5]+)")  # 匹配中文的正则

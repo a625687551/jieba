@@ -84,7 +84,19 @@ class Tokenizer(object):
         return '<Tokenizer dictionary=%r>' % self.dictionary
 
     def gen_pfdict(self, f):
-        lfreq = {}  # 字典存储  词条：出现次数
+        """
+        构建前缀字典的核心函数
+        解析离线统计词典文本文件，每一行分别对应着词、词频、词性，将词和词频提取出来，
+        以词为key，以词频为value，加入到前缀词典中。对于每个词，再分别获取它的前缀词，
+        如果前缀词已经存在于前缀词典中，则不处理；如果该前缀词不在前缀词典中，
+        则将其词频置为0，便于后续构建有向无环图。
+        Args:
+            f: file name
+
+        Returns:
+
+        """
+        lfreq = {}  # 字典存储  词：词频
         ltotal = 0  # 所有词条出现的总次数
         f_name = resolve_filename(f)  # 打开文件dict.txt,这里需要确认下
         for lineno, line in enumerate(f, 1):
@@ -106,6 +118,14 @@ class Tokenizer(object):
         return lfreq, ltotal
 
     def initialize(self, dictionary=None):
+        """
+        初始化，构建前缀字典
+        Args:
+            dictionary:
+
+        Returns:
+
+        """
         if dictionary:
             abs_path = _get_abs_path(dictionary)
             if self.dictionary == abs_path and self.initialized:
@@ -160,6 +180,7 @@ class Tokenizer(object):
                 wlock = DICT_WRITING.get(abs_path, threading.RLock())
                 DICT_WRITING[abs_path] = wlock
                 with wlock:
+                    # 构建前缀词典的入口
                     self.FREQ, self.total = self.gen_pfdict(
                         self.get_dict_file())
                     default_logger.debug(
@@ -215,8 +236,8 @@ class Tokenizer(object):
 
     def get_DAG(self, sentence):
         """
-        DAG中是以{key:list,...}的字典结构存储
-        key是字的开始位置
+        DAG中是以{key:list,...}的字典结构存储，key是字的开始位置
+        有向无环图构建的核心函数
         Args:
             sentence:句子
 
@@ -224,17 +245,23 @@ class Tokenizer(object):
 
         """
         self.check_initialized()
-        DAG = {}
+        DAG = {}  # 存储数据，格式dict
         N = len(sentence)
         for k in xrange(N):
             tmplist = []
             i = k
-            frag = sentence[k]
+            frag = sentence[k]  # 位置k形成的片段
+            # 判断片段是否在前缀词典中
+            # 如果片段不在前缀词典中，则跳出本循环
+            # 也即该片段已经超出统计词典中该词的长度
             while i < N and frag in self.FREQ:
+                # 判断片段是否在前缀词典中
+                # 如果片段不在前缀词典中，则跳出本循环
+                # 也即该片段已经超出统计词典中该词的长度
                 if self.FREQ[frag]:
                     tmplist.append(i)
-                i += 1
-                frag = sentence[k:i + 1]
+                i += 1  # 片段位置末尾+1
+                frag = sentence[k:i + 1]  # 新的片段较旧的片段右边新增一个字
             if not tmplist:
                 tmplist.append(k)
             DAG[k] = tmplist

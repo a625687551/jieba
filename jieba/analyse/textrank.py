@@ -66,7 +66,8 @@ class TextRank(KeywordExtractor):
         return (wp.flag in self.pos_filt and len(wp.word.strip()) >= 2
                 and wp.word.lower() not in self.stop_words)
 
-    def textrank(self, sentence, topK=20, withWeight=False, allowPOS=('ns', 'n', 'vn', 'v'), withFlag=False):
+    def textrank(self, sentence, topK=20, withWeight=False,
+                 allowPOS=('ns', 'n', 'vn', 'v'), withFlag=False):
         """
         Extract keywords from sentence using TextRank algorithm.
         Parameter:
@@ -79,24 +80,26 @@ class TextRank(KeywordExtractor):
                         if False, return a list of words
         """
         self.pos_filt = frozenset(allowPOS)
-        g = UndirectWeightedGraph()
-        cm = defaultdict(int)
-        words = tuple(self.tokenizer.cut(sentence))
-        for i, wp in enumerate(words):
-            if self.pairfilter(wp):
-                for j in xrange(i + 1, i + self.span):
-                    if j >= len(words):
+        g = UndirectWeightedGraph()  # 定义有向无权图
+        cm = defaultdict(int)  # 定义共现词典
+        words = tuple(self.tokenizer.cut(sentence))  # 分词
+        for i, wp in enumerate(words):  # 遍历每个词
+            if self.pairfilter(wp):  # 词i满足过滤条件
+                for j in xrange(i + 1, i + self.span):  # 依次遍历词i之后窗口范围内的词
+                    if j >= len(words):  # 不能超出句子长度
                         break
-                    if not self.pairfilter(words[j]):
+                    if not self.pairfilter(words[j]):  # 不能满足过滤条件，pass
                         continue
+                    # 词i和词j作为key,出现的次数作为value，添加到共现词典中
                     if allowPOS and withFlag:
                         cm[(wp, words[j])] += 1
                     else:
                         cm[(wp.word, words[j].word)] += 1
-
+        # 依次遍历共现词典的每个元素，将词i，词j作为一条边起始点和终止点，共现的次数作为边的权重
         for terms, w in cm.items():
             g.addEdge(terms[0], terms[1], w)
-        nodes_rank = g.rank()
+        nodes_rank = g.rank() # 运行text-rank算法
+        # 排序
         if withWeight:
             tags = sorted(nodes_rank.items(), key=itemgetter(1), reverse=True)
         else:

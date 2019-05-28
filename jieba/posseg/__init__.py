@@ -42,6 +42,7 @@ else:
 
 
 class pair(object):
+    """定义一个词和词性的组合类型"""
 
     def __init__(self, word, flag):
         self.word = word
@@ -77,6 +78,9 @@ class pair(object):
 
 
 class POSTokenizer(object):
+    """
+    词性分词
+    """
 
     def __init__(self, tokenizer=None):
         self.tokenizer = tokenizer or jieba.Tokenizer()
@@ -108,7 +112,7 @@ class POSTokenizer(object):
             except Exception:
                 raise ValueError(
                     'invalid POS dictionary entry in %s at Line %s: %s' % (
-                    f_name, lineno, line))
+                        f_name, lineno, line))
         f.close()
 
     def makesure_userdict_loaded(self):
@@ -117,12 +121,22 @@ class POSTokenizer(object):
             self.tokenizer.user_word_tag_tab = {}
 
     def __cut(self, sentence):
+        """
+        利用HMM进行词性标注的执行函数
+        Args:
+            sentence:
+
+        Returns:
+
+        """
+        # 执行viterbi算法
         prob, pos_list = viterbi(
             sentence, char_state_tab_P, start_P, trans_P, emit_P)
         begin, nexti = 0, 0
 
         for i, char in enumerate(sentence):
             pos = pos_list[i][0]
+            # 根据状态分词
             if pos == 'B':
                 begin = i
             elif pos == 'E':
@@ -135,20 +149,31 @@ class POSTokenizer(object):
             yield pair(sentence[nexti:], pos_list[nexti][1])
 
     def __cut_detail(self, sentence):
+        """
+        利用HMM进行词性标注的主函数
+        首先利用正则表达式对未登录词组成的句子进行分割，然后根据正则表达式进行判断，
+        如果匹配上，则利用隐马尔科夫模型对其进行词性标注；否则，进一步根据正则表达式，判断其类型。
+        Args:
+            sentence:
+
+        Returns:
+
+        """
+        # 根据正则表达式对未登录词组成的句子进行分割
         blocks = re_han_detail.split(sentence)
         for blk in blocks:
-            if re_han_detail.match(blk):
-                for word in self.__cut(blk):
+            if re_han_detail.match(blk):  # 匹配上正则表达式
+                for word in self.__cut(blk):  # 利用HMM对其标注
                     yield word
-            else:
+            else:  # 没有匹配上正则表达式
                 tmp = re_skip_detail.split(blk)
                 for x in tmp:
                     if x:
-                        if re_num.match(x):
+                        if re_num.match(x):  # 匹配为数字
                             yield pair(x, 'm')
-                        elif re_eng.match(x):
+                        elif re_eng.match(x):  # 匹配为英文
                             yield pair(x, 'eng')
-                        else:
+                        else:  # 未知类型
                             yield pair(x, 'x')
 
     def __cut_DAG_NO_HMM(self, sentence):
@@ -175,9 +200,17 @@ class POSTokenizer(object):
             buf = ''
 
     def __cut_DAG(self, sentence):
+        """
+        构建有向无环图
+        Args:
+            sentence:
+
+        Returns:
+
+        """
         DAG = self.tokenizer.get_DAG(sentence)
         route = {}
-
+        # 计算最大概率路径
         self.tokenizer.calc(sentence, DAG, route)
 
         x = 0
@@ -191,15 +224,18 @@ class POSTokenizer(object):
             else:
                 if buf:
                     if len(buf) == 1:
+                        # 词--词性词典中有该词，则将词性赋予给该词；否则为“x”
                         yield pair(buf, self.word_tag_tab.get(buf, 'x'))
+                    # 前缀词典中没有该词，则利用HMM来进行词性标注
                     elif not self.tokenizer.FREQ.get(buf):
                         recognized = self.__cut_detail(buf)
                         for t in recognized:
                             yield t
-                    else:
+                    else:  # 两种都不满足，则将词性标注为 x
                         for elem in buf:
                             yield pair(elem, self.word_tag_tab.get(elem, 'x'))
                     buf = ''
+                # 默认将词性标注为x
                 yield pair(l_word, self.word_tag_tab.get(l_word, 'x'))
             x = y
 
@@ -218,15 +254,18 @@ class POSTokenizer(object):
         self.makesure_userdict_loaded()
         sentence = strdecode(sentence)
         blocks = re_han_internal.split(sentence)
+        # 是否采用HMM
         if HMM:
             cut_blk = self.__cut_DAG
         else:
             cut_blk = self.__cut_DAG_NO_HMM
 
         for blk in blocks:
+            # 匹配汉字的正则表达式，进一步根据分割函数进行分割
             if re_han_internal.match(blk):
                 for word in cut_blk(blk):
                     yield word
+            # 没有匹配上汉字的正则表达式
             else:
                 tmp = re_skip_internal.split(blk)
                 for x in tmp:
@@ -234,12 +273,12 @@ class POSTokenizer(object):
                         yield pair(x, 'x')
                     else:
                         for xx in x:
-                            if re_num.match(xx):
+                            if re_num.match(xx):  # 匹配为数字
                                 yield pair(xx, 'm')
-                            elif re_eng.match(x):
+                            elif re_eng.match(x):  # 匹配为英文
                                 yield pair(xx, 'eng')
                             else:
-                                yield pair(xx, 'x')
+                                yield pair(xx, 'x')  # 匹配为未知
 
     def _lcut_internal(self, sentence):
         return list(self.__cut_internal(sentence))

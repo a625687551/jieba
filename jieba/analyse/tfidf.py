@@ -6,17 +6,19 @@ import jieba.posseg
 from operator import itemgetter
 
 _get_module_path = lambda path: os.path.normpath(os.path.join(os.getcwd(),
-                                                 os.path.dirname(__file__), path))
+                                                              os.path.dirname(
+                                                                  __file__),
+                                                              path))
 _get_abs_path = jieba._get_abs_path
 
 DEFAULT_IDF = _get_module_path("idf.txt")
 
 
 class KeywordExtractor(object):
-
     STOP_WORDS = set((
         "the", "of", "is", "and", "to", "in", "that", "we", "for", "an", "are",
-        "by", "be", "as", "on", "with", "can", "if", "from", "which", "you", "it",
+        "by", "be", "as", "on", "with", "can", "if", "from", "which", "you",
+        "it",
         "this", "then", "at", "have", "all", "not", "one", "has", "or", "that"
     ))
 
@@ -59,6 +61,11 @@ class IDFLoader(object):
 class TFIDF(KeywordExtractor):
 
     def __init__(self, idf_path=None):
+        """
+        初始化
+        Args:
+            idf_path: idf路径
+        """
         self.tokenizer = jieba.dt
         self.postokenizer = jieba.posseg.dt
         self.stop_words = self.STOP_WORDS.copy()
@@ -72,7 +79,8 @@ class TFIDF(KeywordExtractor):
         self.idf_loader.set_new_path(new_abs_path)
         self.idf_freq, self.median_idf = self.idf_loader.get_idf()
 
-    def extract_tags(self, sentence, topK=20, withWeight=False, allowPOS=(), withFlag=False):
+    def extract_tags(self, sentence, topK=20, withWeight=False, allowPOS=(),
+                     withFlag=False):
         """
         Extract keywords from sentence using TF-IDF algorithm.
         Parameter:
@@ -85,10 +93,10 @@ class TFIDF(KeywordExtractor):
                         if True, return a list of pair(word, weight) like posseg.cut
                         if False, return a list of words
         """
-        if allowPOS:
+        if allowPOS:  # 调用词性标注接口
             allowPOS = frozenset(allowPOS)
             words = self.postokenizer.cut(sentence)
-        else:
+        else:  # 普通分词
             words = self.tokenizer.cut(sentence)
         freq = {}
         for w in words:
@@ -98,19 +106,21 @@ class TFIDF(KeywordExtractor):
                 elif not withFlag:
                     w = w.word
             wc = w.word if allowPOS and withFlag else w
+            # 判断长度是否小于2和是否是停用词
             if len(wc.strip()) < 2 or wc.lower() in self.stop_words:
                 continue
-            freq[w] = freq.get(w, 0.0) + 1.0
-        total = sum(freq.values())
-        for k in freq:
-            kw = k.word if allowPOS and withFlag else k
-            freq[k] *= self.idf_freq.get(kw, self.median_idf) / total
+            freq[w] = freq.get(w, 0.0) + 1.0  # 添加到词频字典中，次数加1
+            total = sum(freq.values())  # 统计词频字典的总次数
+            for k in freq:
+                kw = k.word if allowPOS and withFlag else k
+                # 计算每一个词的tf-idf值
+                freq[k] *= self.idf_freq.get(kw, self.median_idf) / total
 
-        if withWeight:
-            tags = sorted(freq.items(), key=itemgetter(1), reverse=True)
-        else:
-            tags = sorted(freq, key=freq.__getitem__, reverse=True)
-        if topK:
-            return tags[:topK]
-        else:
-            return tags
+            if withWeight:  # 根据tf-idf进行排序
+                tags = sorted(freq.items(), key=itemgetter(1), reverse=True)
+            else:
+                tags = sorted(freq, key=freq.__getitem__, reverse=True)
+            if topK:
+                return tags[:topK]
+            else:
+                return tags
